@@ -14,7 +14,9 @@ pub async fn setup_main_window(
           .fullscreen(false)
           .background_color(Color(0, 0, 0, 0))
           .enable_clipboard_access()
-          .inner_size(2400.0, 1300.0);
+          // Fits a 1920x1080 desktop with a panel and window frame (the
+          // previous 2400x1300 default was taller than that screen).
+          .inner_size(1600.0, 900.0);
 
   #[cfg(target_os = "macos")]
   let win_builder = win_builder
