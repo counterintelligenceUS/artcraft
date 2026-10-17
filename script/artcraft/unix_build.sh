@@ -10,8 +10,8 @@
 #     g++-14 libstdc++-14-dev
 # BoringSSL (the wreq TLS stack) is built with clang, which on Ubuntu 24.04
 # links against GCC 14's libstdc++. g++-13 alone is not enough.
-# `tauri build` with bundle target "all" also tries to build an rpm. This
-# script asks for deb and AppImage on Linux so rpmbuild is not required.
+# On Linux, tauri.linux.conf.json limits bundles to deb and AppImage so
+# rpmbuild is not required. macOS and Windows keep the targets in tauri.conf.json.
 
 set -euxo pipefail
 
@@ -45,17 +45,12 @@ export TAURI_FRONTEND_PATH="${frontend_path}"
 export TAURI_APP_PATH="${rust_crate_path}"
 
 cd "${rust_crate_path}"
-# On Linux, "all" also tries to build an rpm, which needs rpmbuild.
-if [[ "$(uname -s)" == "Linux" ]]; then
-  cargo tauri build \
-    --bundles deb,appimage \
-    --config "${config_path}" \
-    --config '{"build":{"beforeBuildCommand":""}}'
-else
-  cargo tauri build \
-    --config "${config_path}" \
-    --config '{"build":{"beforeBuildCommand":""}}'
-fi
+# Tauri merges tauri.linux.conf.json on Linux (deb + AppImage, no rpm).
+# The frontend is already built above; skip beforeBuildCommand, which runs
+# with cwd in this crate and cannot see frontend/node_modules.
+cargo tauri build \
+  --config "${config_path}" \
+  --config '{"build":{"beforeBuildCommand":""}}'
 
 echo "Done!"
 

@@ -91,8 +91,6 @@ async function main() {
       TAURI_APP_PATH: rustDir,
       SQLX_OFFLINE: process.env.SQLX_OFFLINE ?? "true",
       RUSTFLAGS: process.env.RUSTFLAGS ?? "-Awarnings",
-      WEBKIT_DISABLE_DMABUF_RENDERER: process.env.WEBKIT_DISABLE_DMABUF_RENDERER ?? "1",
-      WEBKIT_DISABLE_COMPOSITING_MODE: process.env.WEBKIT_DISABLE_COMPOSITING_MODE ?? "1",
     },
   });
   rust.on("error", fail);

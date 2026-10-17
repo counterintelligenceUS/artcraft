@@ -127,12 +127,3 @@ walkdir = "2.4.0"
 # Windows: choco install cmake strawberryperl pkgconfiglite llvm nasm
 wreq-util = "3.0.0-rc.10"
 wreq = { version = "6.0.0-rc.28", features = ["json", "query", "form", "multipart", "cookies", "ws", "stream", "gzip", "brotli", "zstd", "deflate"] }
-
-# Profiles are honored only at the workspace root. The desktop crate used to
-# declare this release profile, and Cargo ignored it.
-[profile.release]
-codegen-units = 1
-lto = true
-opt-level = 3
-panic = "abort"
-strip = true

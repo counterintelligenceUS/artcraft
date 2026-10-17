@@ -52,10 +52,14 @@ If the Rust watcher exits, the launcher closes Vite and propagates the exit code
 It never finds or terminates another app by name or port.
 
 The launcher retains the existing Unix defaults for `VITE_ENVIRONMENT_TYPE`,
-`SQLX_OFFLINE`, `RUSTFLAGS`, and the Linux WebKit workarounds. Explicit environment
-overrides are preserved. It uses the normal Artcraft app data and Cargo target
-directory; port separation does not create an isolated account/data profile, and
-concurrent Rust builds can wait on Cargo's build lock.
+`SQLX_OFFLINE`, and `RUSTFLAGS`. Explicit environment overrides are preserved.
+It does not force WebKit's software compositor; the Linux app keeps the GPU
+compositor unless `ARTCRAFT_WEBKIT_SOFTWARE=1` is set, the display looks like
+X11 forwarding (`localhost:10.0`), or a direct GLX context cannot be created.
+`ARTCRAFT_WEBKIT_GPU=1` keeps the GPU compositor in those cases. The launcher
+uses the normal Artcraft app data and Cargo target directory; port separation
+does not create an isolated account/data profile, and concurrent Rust builds
+can wait on Cargo's build lock.
 
 To verify the launcher without compiling Rust or opening a desktop window:
 
@@ -79,6 +83,42 @@ without restarting the Rust process.
 # Run the Tauri Rust application
 .\script\artcraft\windows_rust_dev.ps1
 ```
+
+**Linux production build**
+
+Ubuntu 24.04 and Linux Mint 22 need the Tauri and BoringSSL packages below.
+BoringSSL is built with clang, which links GCC 14's libstdc++ on Ubuntu 24.04,
+so `g++-13` alone is not enough. Do not set `RUSTFLAGS=-C target-feature=+crt-static`;
+that flag is Windows-only.
+
+```bash
+sudo apt-get install -y build-essential curl wget file patchelf \
+  libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev \
+  librsvg2-dev libxdo-dev libssl-dev libfuse2t64 squashfs-tools \
+  pkg-config cmake clang libclang-dev llvm nasm \
+  g++-14 libstdc++-14-dev
+
+export SQLX_OFFLINE=true
+./script/artcraft/unix_build.sh
+```
+
+`SQLX_OFFLINE=true` uses the `.sqlx` cache. Run the script from the repository
+root. On Linux, Tauri merges `crates/desktop/artcraft/tauri.linux.conf.json`,
+which bundles a `.deb` and an AppImage and skips rpm. The script builds the
+frontend from `frontend/` and then clears `beforeBuildCommand`, because Tauri
+would otherwise run `nx` from the Rust crate.
+
+The first Linux window opens at 1600×900 so it fits a 1920×1080 screen. macOS
+and Windows stay at 2400×1300. WebKit's GPU compositor is the default, because
+3D views use three.js WebGL. Software rendering turns WebGL off. Use it when
+the window is blank:
+
+```bash
+ARTCRAFT_WEBKIT_SOFTWARE=1 artcraft
+```
+
+The same software path is selected automatically for X11 forwarding and when
+creating a direct GLX context fails.
 
 Backend services and website builds live in the separate `artcraft-services` repository.
 This repository retains the desktop task database in
