@@ -89,9 +89,16 @@ tauri-plugin-opener = "2"
 # [target."cfg(target_os = \"macos\")".dependencies]
 # cocoa = "0.26"
 
+[target.'cfg(target_os = "linux")'.dependencies]
+libc = "0.2.183"
+
 [dev-dependencies]
 serial_test = "3.2.0"
 
+# Cargo only honors [profile.*] in the workspace root. These tables are kept
+# so this crate matches upstream, and they do not change macOS or Windows
+# release builds. Turning them on at the workspace root (panic = "abort", full
+# LTO) is a separate cross-platform proposal.
 [profile.dev]
 incremental = true # Compile your binary in smaller steps.
 

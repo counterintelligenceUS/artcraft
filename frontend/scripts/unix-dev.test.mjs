@@ -29,6 +29,8 @@ test("skips occupied ports, pairs Tauri with real Vite/HMR, and cleans up on Ctr
   assert.ok(!record.args.includes("--no-dev-server-wait"));
   assert.equal(record.env.TAURI_APP_PATH, path.join(rootDir, "crates/desktop/artcraft"));
   assert.equal(record.env.TAURI_FRONTEND_PATH, path.join(rootDir, "frontend"));
+  assert.equal(record.env.WEBKIT_DISABLE_DMABUF_RENDERER, undefined);
+  assert.equal(record.env.WEBKIT_DISABLE_COMPOSITING_MODE, undefined);
   assert.ok(config.app.security.devCsp["connect-src"].includes(url.replace("http:", "ws:")));
   assert.match(await (await fetch(url)).text(), /\/src\/index\.tsx/);
   assert.match(await (await fetch(`${url}/@vite/client`)).text(), /WebSocket/);
@@ -107,10 +109,17 @@ test("a React source edit sends HMR on the selected port without restarting Rust
 });
 
 test("Rust watcher arguments include SQLx inputs and preserve caller overrides", { timeout: 40000 }, async (t) => {
-  const run = await fixture(t, { SQLX_OFFLINE: "false", RUSTFLAGS: "-C debuginfo=1" });
+  const run = await fixture(t, {
+    SQLX_OFFLINE: "false",
+    RUSTFLAGS: "-C debuginfo=1",
+    WEBKIT_DISABLE_DMABUF_RENDERER: "1",
+    WEBKIT_DISABLE_COMPOSITING_MODE: "1",
+  });
   const record = await run.record();
   assert.equal(record.env.SQLX_OFFLINE, "false");
   assert.equal(record.env.RUSTFLAGS, "-C debuginfo=1");
+  assert.equal(record.env.WEBKIT_DISABLE_DMABUF_RENDERER, "1");
+  assert.equal(record.env.WEBKIT_DISABLE_COMPOSITING_MODE, "1");
   assert.ok(record.args.includes(path.join(rootDir, ".sqlx")));
   assert.ok(record.args.includes(path.join(rootDir, "_database/sql/artcraft_migrations")));
   const ignores = await readFile(path.join(rootDir, "crates/desktop/artcraft/.taurignore"), "utf8");
@@ -136,7 +145,7 @@ if (process.argv.includes("--version")) process.exit(0);
 const child = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], { stdio: "ignore" });
 fs.writeFileSync(process.env.TEST_RECORD, JSON.stringify({
   args: process.argv.slice(2), cwd: process.cwd(),
-  env: Object.fromEntries(["TAURI_APP_PATH", "TAURI_FRONTEND_PATH", "SQLX_OFFLINE", "RUSTFLAGS"].map(key => [key, process.env[key]])),
+  env: Object.fromEntries(["TAURI_APP_PATH", "TAURI_FRONTEND_PATH", "SQLX_OFFLINE", "RUSTFLAGS", "WEBKIT_DISABLE_DMABUF_RENDERER", "WEBKIT_DISABLE_COMPOSITING_MODE"].map(key => [key, process.env[key]])),
   pid: process.pid, childPid: child.pid,
 }));
 if (process.env.TEST_EXIT_CODE) setTimeout(() => process.exit(Number(process.env.TEST_EXIT_CODE)), 200);
@@ -144,10 +153,14 @@ setInterval(() => {}, 1000);
 `, { mode: 0o755 });
 
   const recordFile = path.join(dir, "record.json");
+  const childEnv = { ...process.env, ...env, PATH: `${dir}:${process.env.PATH}`, TEST_RECORD: recordFile };
+  for (const key of ["WEBKIT_DISABLE_DMABUF_RENDERER", "WEBKIT_DISABLE_COMPOSITING_MODE"]) {
+    if (!(key in env)) delete childEnv[key];
+  }
   const proc = spawn(launcher, [], {
     // Prove the launcher is independent of the invoking working directory.
     cwd: dir,
-    env: { ...process.env, ...env, PATH: `${dir}:${process.env.PATH}`, TEST_RECORD: recordFile },
+    env: childEnv,
     stdio: ["ignore", "pipe", "pipe"],
   });
   let output = "";

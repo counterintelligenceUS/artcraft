@@ -13,8 +13,14 @@ pub async fn setup_main_window(
           .resizable(true)
           .fullscreen(false)
           .background_color(Color(0, 0, 0, 0))
-          .enable_clipboard_access()
-          .inner_size(2400.0, 1300.0);
+          .enable_clipboard_access();
+
+  // 2400x1300 is taller than a 1920x1080 Linux desktop with a panel and frame.
+  // Other platforms keep the upstream size.
+  #[cfg(target_os = "linux")]
+  let win_builder = win_builder.inner_size(1600.0, 900.0);
+  #[cfg(not(target_os = "linux"))]
+  let win_builder = win_builder.inner_size(2400.0, 1300.0);
 
   #[cfg(target_os = "macos")]
   let win_builder = win_builder

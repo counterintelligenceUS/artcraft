@@ -395,6 +395,7 @@ dependencies = [
  "image",
  "images",
  "indexmap 2.13.0",
+ "libc",
  "log",
  "memory_store",
  "midjourney_client",
